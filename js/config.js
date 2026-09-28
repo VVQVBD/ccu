@@ -29,8 +29,8 @@ export const HANDEDNESS_SWAPPED = false;
 // он виден всем, а базу защищают правила RLS из supabase/schema.sql.
 // Секретный ключ (secret / service_role) сюда НИКОГДА не вставлять.
 // Если оставить пустыми — аккаунты выключены, прогресс хранится только в браузере.
-export const SUPABASE_URL = "";
-export const SUPABASE_KEY = "";
+export const SUPABASE_URL = "https://rmldpiokeilhpgfzaamd.supabase.co";
+export const SUPABASE_KEY = "sb_publishable_rQGhQa_El1pO7_l5WRPiUg_Ci6gxFzW";
 
 // ---------- Номера точек руки MediaPipe (карта — docs/GESTURES.md, 4.1) ----------
 
