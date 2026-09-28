@@ -21,6 +21,7 @@ import * as auth from "./auth.js";
 import * as storage from "./storage.js";
 import { toggleSound } from "./sound.js";
 import { initLanding } from "./landing.js";
+import * as writing from "./writing.js";
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("overlay");
@@ -43,6 +44,11 @@ ui.onAction((action, button) => {
   if (action === "again") game.restart(now);
   if (action === "menu") game.showMenu();
   if (action === "records") game.showRecords();
+  if (action === "words") game.showWords();
+  if (action === "word") game.start("word", now, button.dataset.word);
+  if (action === "write") game.startWriting();
+  if (action === "write-back") writing.backspace();
+  if (action === "write-clear") writing.clearText();
   if (action === "sound") ui.setSoundLabel(toggleSound());
   if (action === "retry") location.reload();
   if (action === "auth-tab") ui.switchAuthTab(button.dataset.tab);
