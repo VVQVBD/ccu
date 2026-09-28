@@ -9,6 +9,7 @@
 
 import { LETTERS } from "./letters.js";
 import { handSchemaSvg } from "./hand-schema.js";
+import { ALPHABET, STATUS_TEXT } from "./alphabet.js";
 import { DWELL_MS, CURSOR_ZONE_MIN, CURSOR_ZONE_MAX, FINGERS } from "./config.js";
 import { playClick } from "./sound.js";
 import { countUp } from "./effects.js";
@@ -190,6 +191,39 @@ export function hidePraise() {
 
 export function getTargetElement() {
   return $("target");
+}
+
+// ---------- Раздел «Алфавит» ----------
+
+// filter: "all" — все буквы, "yes" — распознаваемые, "other" — только посмотреть.
+export function renderAlphabet(filter) {
+  document.querySelectorAll("[data-action=alpha-filter]").forEach((t) => t.classList.toggle("active", t.dataset.filter === filter));
+  const list = ALPHABET.filter((a) => filter === "all" || (filter === "yes" ? a.status === "yes" : a.status !== "yes"));
+  $("alpha-grid").innerHTML = list.map((a, i) => `
+    <button class="alpha-card ${a.status}" data-action="alpha-letter" data-letter="${a.letter}" style="animation-delay:${i * 20}ms">
+      ${handSchemaSvg(a.letter)}
+      <span class="alpha-letter">${a.letter}</span>
+      <span class="alpha-badge">${a.status === "yes" ? "✅" : a.status === "motion" ? "↻" : "👀"}</span>
+    </button>`).join("");
+}
+
+// Крупная карточка выбранной буквы: схема, описание, вид буквы и кнопка тренировки.
+export function showAlphaDetail(letter) {
+  const a = ALPHABET.find((x) => x.letter === letter);
+  const box = $("alpha-detail");
+  box.innerHTML = `
+    <div class="alpha-detail-hand">${handSchemaSvg(a.letter)}</div>
+    <div>
+      <div class="alpha-detail-letter">${a.letter}</div>
+      <p>${a.description}</p>
+      <p class="alpha-status ${a.status}">${STATUS_TEXT[a.status]}${a.lesson ? ` · урок ${a.lesson}` : ""}</p>
+      ${a.status === "yes" ? `<button class="btn btn-primary btn-small" data-action="word" data-word="${a.letter}">Потренировать «${a.letter}»</button>` : ""}
+    </div>`;
+  box.hidden = false;
+  box.classList.remove("swap");
+  void box.offsetWidth;
+  box.classList.add("swap");
+  document.querySelector(".panel").scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // ---------- Раздел «Слова» ----------

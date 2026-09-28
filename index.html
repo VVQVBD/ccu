@@ -46,9 +46,9 @@
           <a class="btn btn-ghost btn-big" href="#how">Как это работает</a>
         </div>
         <div class="hero-facts reveal" style="--i:4">
-          <div><b>10</b><span>букв-жестов</span></div>
-          <div><b>0</b><span>установок</span></div>
-          <div><b>100%</b><span>в браузере</span></div>
+          <div><b>15</b><span>букв распознаёт</span></div>
+          <div><b>33</b><span>буквы в алфавите</span></div>
+                    <div><b>100%</b><span>в браузере</span></div>
         </div>
       </div>
 
@@ -108,8 +108,9 @@
     </section>
 
     <section class="section" id="letters">
-      <h2 class="reveal">10 букв для старта</h2>
-      <p class="section-lead reveal">Три урока от простого к сложному. Мы выбрали буквы без движения, которые надёжно различаются по точкам руки, — и из них складываются слова: СОВА, НОРА, СЫР, ШАР…</p>
+      <h2 class="reveal">Весь алфавит — 33 буквы</h2>
+      <p class="section-lead reveal"><b>15 букв камера распознаёт</b> и проверяет — пять уроков от простого к сложному, из них складываются слова: КНИГА, СОВА, ЯГУАР, ЭКРАН… Остальные есть в разделе «Алфавит» со схемами: одни показываются с движением, другие легко спутать между собой — их добавим следующими.</p>
+      <div class="legend reveal"><span>✅ распознаёт</span><span>👀 пока только посмотреть</span><span>↻ с движением</span></div>
       <div class="letters-grid" id="letters-grid"><!-- карточки рисует landing.js --></div>
     </section>
 
@@ -274,6 +275,19 @@
             <button class="btn" data-action="words">📖 Словарь</button>
           </div>
           <p class="small-note">Попробуй сложить: <span id="write-chips"></span></p>
+        </div>
+
+        <!-- ЭКРАН: весь алфавит (33 буквы) -->
+        <div class="screen" id="screen-alphabet">
+          <h1>Алфавит</h1>
+          <p class="lead">Все 33 буквы русской дактильной азбуки. Нажми на букву — покажу, как её сложить.</p>
+          <div class="alpha-detail" id="alpha-detail" hidden></div>
+          <div class="tabs tabs-3">
+            <button class="tab active" data-action="alpha-filter" data-filter="all">Все 33</button>
+            <button class="tab" data-action="alpha-filter" data-filter="yes">Распознаёт</button>
+            <button class="tab" data-action="alpha-filter" data-filter="other">Только смотреть</button>
+          </div>
+          <div class="alpha-grid" id="alpha-grid"><!-- карточки рисует ui.js (renderAlphabet) --></div>
         </div>
 
         <!-- ЭКРАН: итоги -->

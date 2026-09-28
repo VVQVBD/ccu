@@ -4,14 +4,14 @@
 // Что делает:
 //   1. Плавное появление блоков при прокрутке (класс .visible для .reveal).
 //   2. Живая демонстрация в первом экране: буквы сменяют друг друга с подсказками.
-//   3. Карточки 10 букв со схемами рук.
+//   3. Карточки всех 33 букв со схемами рук и отметкой «распознаёт / только посмотреть».
 //
 // Связь: main.js вызывает initLanding() при загрузке страницы.
 // Схемы рук рисует hand-schema.js, описания букв берём из letters.js.
 // ============================================================
 
-import { LETTERS } from "./letters.js";
 import { handSchemaSvg } from "./hand-schema.js";
+import { ALPHABET, STATUS_TEXT } from "./alphabet.js";
 
 const DEMO_INTERVAL_MS = 2600; // как часто меняется буква в демонстрации
 
@@ -52,12 +52,12 @@ export function observeReveal() {
 
 function renderLetterCards() {
   const grid = document.getElementById("letters-grid");
-  grid.innerHTML = Object.entries(LETTERS).map(([letter, info], i) => `
-    <article class="letter-card reveal" style="--i:${i % 5}">
-      <span class="lc-lesson">Урок ${info.lesson}</span>
-      ${handSchemaSvg(letter)}
-      <div class="lc-letter">${letter}</div>
-      <p>${info.description}</p>
+  grid.innerHTML = ALPHABET.map((a, i) => `
+    <article class="letter-card ${a.status} reveal" style="--i:${i % 6}" title="${STATUS_TEXT[a.status]}">
+      <span class="lc-lesson">${a.status === "yes" ? `✅ урок ${a.lesson}` : a.status === "motion" ? "↻" : "👀"}</span>
+      ${handSchemaSvg(a.letter)}
+      <div class="lc-letter">${a.letter}</div>
+      <p>${a.description}</p>
     </article>`).join("");
   observeReveal();
 }

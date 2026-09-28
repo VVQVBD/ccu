@@ -368,7 +368,11 @@ body.app-open .aurora span { animation-play-state: paused; }
   font-family: var(--font-display);
 }
 
-.letters-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.letters-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.letter-card.watch, .letter-card.motion { opacity: 0.8; }
+.letter-card.yes { border-color: rgba(52, 211, 153, 0.35); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin: -20px 0 26px; }
+.legend span { padding: 6px 12px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); font-size: 0.85rem; font-weight: 700; }
 .letter-card {
   position: relative;
   padding: 16px 12px 18px;
@@ -749,6 +753,42 @@ body.app-open .aurora span { animation-play-state: paused; }
 .chip { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 8px; background: var(--glass-strong); font-weight: 800; color: var(--text); }
 .chip.done { background: rgba(52, 211, 153, 0.25); color: var(--ok); }
 
+/* Раздел «Алфавит» */
+.tabs-3 { grid-template-columns: repeat(3, 1fr); }
+.tabs-3 .tab { font-size: 0.85rem; padding: 9px 4px; }
+.alpha-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.alpha-card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 4px 8px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.3s var(--ease-spring), border-color 0.2s, background 0.2s;
+  animation: pop-in 0.4s var(--ease-spring) backwards;
+}
+.alpha-card:hover, .alpha-card.pointed { transform: translateY(-3px); border-color: rgba(255, 181, 71, 0.6); }
+.alpha-card .hand-schema { width: 100%; height: 70px; }
+.alpha-card.watch .hand-schema, .alpha-card.motion .hand-schema { opacity: 0.75; }
+.alpha-letter { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+.alpha-badge { position: absolute; top: 4px; right: 6px; font-size: 0.75rem; }
+.alpha-detail {
+  display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center;
+  padding: 14px; margin-bottom: 14px;
+  border-radius: 18px;
+  background: var(--glass-strong);
+  border: 1px solid rgba(255, 181, 71, 0.4);
+}
+.alpha-detail.swap { animation: screen-in 0.4s var(--ease-out); }
+.alpha-detail-hand .hand-schema { width: 110px; height: 136px; display: block; }
+.alpha-detail-letter { font-family: var(--font-display); font-size: 2.4rem; font-weight: 800; line-height: 1; }
+.alpha-detail p { margin: 6px 0; line-height: 1.4; }
+.alpha-status { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+.alpha-status.yes { color: var(--ok); }
+
 /* Итоги */
 .stars { display: flex; gap: 6px; font-size: 3rem; margin: 10px 0; }
 .stars span { color: rgba(255, 255, 255, 0.12); }
@@ -828,6 +868,9 @@ body.app-open .aurora span { animation-play-state: paused; }
 .hs-skin.hs-thumb { stroke: #f3bd98; }
 .hs-outline-fill { fill: #f6c9a8; stroke: #2a1d3d; stroke-width: 3; }
 .hs-ring { fill: none; stroke: var(--amber); stroke-width: 2.5; }
+.hs-tip { fill: #f6c9a8; stroke: #2a1d3d; stroke-width: 2.5; }
+.hs-motion-bg { fill: var(--violet); }
+.hs-motion { fill: #fff; font: 700 13px sans-serif; }
 
 /* ---------- 8. Телефон и узкий экран ---------- */
 @media (max-width: 960px) {
@@ -840,7 +883,7 @@ body.app-open .aurora span { animation-play-state: paused; }
   .cards-3, .steps, .team { grid-template-columns: 1fr 1fr; }
   .step:not(:last-child)::after { display: none; }
   .split { grid-template-columns: 1fr; }
-  .letters-grid { grid-template-columns: repeat(3, 1fr); }
+  .letters-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 @media (max-width: 820px) {
@@ -865,7 +908,8 @@ body.app-open .aurora span { animation-play-state: paused; }
   .demo-hand .hand-schema { height: 150px; }
   .orbit { display: none; }
   .cards-3, .steps, .team { grid-template-columns: 1fr; }
-  .letters-grid { grid-template-columns: repeat(2, 1fr); }
+  .letters-grid { grid-template-columns: repeat(3, 1fr); }
+  .letter-card p { display: none; } /* на телефоне — только схема и буква, иначе 33 карточки слишком длинные */
   .hint-bubble:nth-child(even) { margin-left: 0; }
   .user-chip { display: none; }
   .logo { font-size: 0.95rem; }
