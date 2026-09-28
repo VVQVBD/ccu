@@ -26,7 +26,12 @@ function findGeneralProblem(f, letter) {
   if (f.atEdge) return { text: "Рука выходит за край кадра — сдвинь её к центру", countsAsMistake: false };
   if (f.tooFar) return { text: "Рука слишком далеко — поднеси её ближе к камере", countsAsMistake: false };
   if (f.tooClose) return { text: "Рука слишком близко — отодвинь её немного", countsAsMistake: false };
-  if (!f.fingersUp) return { text: "Держи кисть прямо — пальцами вверх", countsAsMistake: true };
+  // Направление пальцев: почти все буквы — пальцами вверх, «Г» — пальцами вниз.
+  const needDirection = letter.direction || "up";
+  if (f.direction !== needDirection) {
+    const text = needDirection === "down" ? "Опусти кисть — пальцами вниз" : "Держи кисть прямо — пальцами вверх";
+    return { text, countsAsMistake: true };
+  }
   if (!letter.skipPalmCheck) {
     if (f.orientation === "back") {
       return { text: "Камера видит тыльную сторону — разверни ладонь к камере", countsAsMistake: true };

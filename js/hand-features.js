@@ -13,7 +13,8 @@ import {
   WRIST, THUMB, FINGERS, FINGER_NAMES,
   FINGER_STRAIGHT_MIN_ANGLE, FINGER_BENT_MAX_ANGLE, THUMB_STRAIGHT_MIN_ANGLE,
   THUMB_OUT_MIN_DIST, THUMB_SIDE_MAX_DIST, TOUCH_MAX_DIST, GAP_MIN_DIST,
-  FINGERS_TOGETHER_MAX_DIST, PALM_FACING_MIN, FINGERS_UP_MAX_TILT,
+  FINGERS_TOGETHER_MAX_DIST, PALM_FACING_MIN, FINGERS_UP_MAX_TILT, FINGERS_DOWN_MIN_TILT,
+  FINGERS_APART_MIN_DIST, CROSS_MIN,
   HAND_TOO_SMALL, HAND_TOO_BIG, EDGE_MARGIN, SMOOTHING_FRAMES,
 } from "./config.js";
 
@@ -121,6 +122,29 @@ export function computeFeatures(hand, videoWidth, videoHeight) {
   ));
   const fingersTogether = spread <= FINGERS_TOGETHER_MAX_DIST;
 
+  // 5а. Раствор указательного и среднего (буква К — «галочка»).
+  const indexMiddleGap = smooth("indexMiddleGap", rel(FINGERS.index.tip, FINGERS.middle.tip));
+  const indexMiddleApart = indexMiddleGap >= FINGERS_APART_MIN_DIST;
+
+  // 5б. Скрещены ли указательный и средний (буква Я).
+  //     Ось поперёк ладони — от костяшки указательного к костяшке мизинца. У основания средний
+  //     всегда дальше по этой оси, чем указательный. Если у КОНЧИКОВ порядок поменялся — пальцы скрещены.
+  //     Ось берём из самой руки, поэтому работает и для левой, и для правой.
+  const axis = {
+    x: w[FINGERS.pinky.mcp].x - w[FINGERS.index.mcp].x,
+    y: w[FINGERS.pinky.mcp].y - w[FINGERS.index.mcp].y,
+    z: w[FINGERS.pinky.mcp].z - w[FINGERS.index.mcp].z,
+  };
+  const tipsDelta = {
+    x: w[FINGERS.middle.tip].x - w[FINGERS.index.tip].x,
+    y: w[FINGERS.middle.tip].y - w[FINGERS.index.tip].y,
+    z: w[FINGERS.middle.tip].z - w[FINGERS.index.tip].z,
+  };
+  const axisLength = Math.hypot(axis.x, axis.y, axis.z) || 1;
+  const crossValue = smooth("cross",
+    (tipsDelta.x * axis.x + tipsDelta.y * axis.y + tipsDelta.z * axis.z) / (axisLength * palm));
+  const fingersCrossed = crossValue <= -CROSS_MIN;
+
   // ---------- Положение руки в кадре (по точкам кадра, в пикселях) ----------
   const px = (i) => ({ x: p[i].x * videoWidth, y: p[i].y * videoHeight });
   const wrist = px(WRIST);
@@ -141,6 +165,10 @@ export function computeFeatures(hand, videoWidth, videoHeight) {
   const tilt = smooth("tilt",
     (Math.abs(Math.atan2(middleBase.x - wrist.x, wrist.y - middleBase.y)) * 180) / Math.PI);
   const fingersUp = tilt <= FINGERS_UP_MAX_TILT;
+  // Направление пальцев: вверх / вниз (буква Г) / вбок.
+  let direction = "side";
+  if (tilt <= FINGERS_UP_MAX_TILT) direction = "up";
+  if (tilt >= FINGERS_DOWN_MIN_TILT) direction = "down";
 
   // 9. Ориентация ладони. Векторное произведение «запястье→указательный» и
   //    «запястье→мизинец»: его знак показывает, какой стороной рука к камере.
@@ -159,15 +187,17 @@ export function computeFeatures(hand, videoWidth, videoHeight) {
     fingers, thumbAngle, thumbStraight, thumbOut, thumbAlongIndex,
     thumbToIndexBase, thumbToIndexMiddle,
     touch, touchedFinger, gap, hasGap, spread, fingersTogether,
-    palmOnScreen, tooFar, tooClose, atEdge, tilt, fingersUp,
+    indexMiddleGap, indexMiddleApart, crossValue, fingersCrossed,
+    palmOnScreen, tooFar, tooClose, atEdge, tilt, fingersUp, direction,
     palmSign, orientation, isRightHand: hand.isRightHand,
   };
 }
 
-// «Указка» — прямой только указательный палец. Этим жестом управляем курсором
-// (кнопки меню). Среди наших букв такой формы нет, поэтому буква не нажмёт кнопку случайно.
+// «Указка» — прямой только указательный палец, направленный ВВЕРХ. Этим жестом управляем
+// курсором (кнопки меню). Та же форма пальцами ВНИЗ — это буква «Г», поэтому проверяем направление.
 export function isPointingGesture(features) {
   const f = features.fingers;
-  return f.index.state === STRAIGHT
+  return features.direction === "up"
+    && f.index.state === STRAIGHT
     && f.middle.state === BENT && f.ring.state === BENT && f.pinky.state === BENT;
 }
