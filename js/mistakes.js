@@ -60,8 +60,7 @@ export class LetterJudge {
     this.candidateSince = 0;
     this.shownHint = null;        // подсказка на экране
     this.shownAt = 0;
-    this.hadMistake = false;      // была ли подсказка по форме руки — для точности в итогах
-    this.mistakeCount = 0;        // сколько разных подсказок показали — для «трудных букв»
+    this.mistakeCount = 0;        // сколько подсказок по форме руки показали — для точности и «трудных букв»
     this.done = false;
   }
 
@@ -145,10 +144,7 @@ export class LetterJudge {
     if (!inGrace && heldLongEnough && this.shownHint !== text) {
       this.shownHint = text;
       this.shownAt = now;
-      if (problem.countsAsMistake) {
-        this.hadMistake = true;
-        this.mistakeCount += 1;
-      }
+      if (problem.countsAsMistake) this.mistakeCount += 1;
     }
   }
 
