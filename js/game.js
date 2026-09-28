@@ -19,6 +19,7 @@ import {
 } from "./config.js";
 import * as ui from "./ui.js";
 import * as storage from "./storage.js";
+import * as writing from "./writing.js";
 import { playSuccess, playHint, playFinish } from "./sound.js";
 import { burstFromElement, burstConfetti, flashStage } from "./effects.js";
 import { getPlayer, loadLeaderboard } from "./auth.js";
@@ -66,7 +67,11 @@ export function showMenu() {
     action: "exam", title: "Экзамен", sub: "Собери слово",
     locked: !progress.lessons[2],
   });
-  items.push({ action: "records", title: "Рекорды", sub: "и прогресс", wide: true });
+  items.push({
+    action: "words", title: "Слова", sub: "Письмо рукой и словарь",
+    locked: !progress.lessons[1],
+  });
+  items.push({ action: "records", title: "Рекорды", sub: "и прогресс" });
   const player = getPlayer();
   ui.renderMenu(items, player ? `Привет, ${player.username}!` : "Учим дактильную азбуку");
   ui.showScreen("menu");
@@ -104,6 +109,38 @@ export function startExam(now) {
   beginLetter(now);
 }
 
+// ---------- Раздел «Слова» ----------
+
+// Экран словаря: все слова; открыты те, все буквы которых уже пройдены.
+export function showWords() {
+  session = null;
+  const progress = storage.loadProgress();
+  const learned = learnedLetters(progress);
+  const items = WORDS.map((word) => ({
+    word,
+    stars: progress.words[word] || 0,
+    locked: ![...word].every((ch) => learned.includes(ch)),
+  }));
+  ui.renderWords(items);
+  ui.showScreen("words");
+}
+
+// Тренировка одного слова из словаря: буквы по очереди, схема руки видна всегда.
+function startWord(word, now) {
+  session = {
+    type: "word", title: `Слово «${word}»`, words: [word],
+    letters: [...word], index: 0, results: [], startedAt: now,
+  };
+  beginLetter(now);
+}
+
+// Свободное письмо: вся логика — в writing.js.
+export function startWriting() {
+  session = { type: "write" };
+  writing.startWriting();
+  ui.showScreen("write");
+}
+
 // Повторить последний режим (кнопка «Ещё раз» на итогах).
 let lastStart = null;
 export function restart(now) {
@@ -112,8 +149,10 @@ export function restart(now) {
   ui.showScreen("play");
 }
 
-export function start(type, now, lesson) {
-  if (type === "lesson") lastStart = (t) => startLesson(lesson, t);
+// param — номер урока (для урока) или слово (для тренировки слова).
+export function start(type, now, param) {
+  if (type === "lesson") lastStart = (t) => startLesson(param, t);
+  if (type === "word") lastStart = (t) => startWord(param, t);
   if (type === "training") lastStart = (t) => startTraining(t);
   if (type === "exam") lastStart = (t) => startExam(t);
   lastStart(now);
@@ -178,6 +217,7 @@ export function skipLetter(now) {
 // Возвращает подсветку пальцев для draw.js (или null, если не в игре).
 export function onFrame(features, pointing, now) {
   if (!session) return null;
+  if (session.type === "write") return writing.onFrame(features, pointing, now);
 
   // Время тренировки вышло.
   if (session.type === "training" && now - session.startedAt >= TRAINING_DURATION_S * 1000) {
@@ -211,8 +251,8 @@ function renderPlayView(now) {
   const stuck = now - s.letterStartedAt >= SHOW_SKIP_AFTER_MS;
   const view = {
     modeTitle: s.title, letter, word: null, wordPosition: 0,
-    // В уроке эталон виден всегда; в тренировке и экзамене — только если застрял.
-    showReference: s.type === "lesson" || stuck,
+    // В уроке и тренировке слова эталон виден всегда; в тренировке и экзамене — только если застрял.
+    showReference: s.type === "lesson" || s.type === "word" || stuck,
     showSkip: stuck && !s.pauseUntil,
     info: "",
   };
@@ -225,7 +265,7 @@ function renderPlayView(now) {
     const score = s.results.filter((r) => !r.skipped).length;
     view.info = `⏱ ${left} с · ${score} ✓`;
   }
-  if (s.type === "exam") {
+  if (s.type === "exam" || s.type === "word") {
     // Находим, какое слово сейчас и какая в нём буква.
     let position = s.index;
     let wordIndex = 0;
@@ -235,7 +275,9 @@ function renderPlayView(now) {
     }
     view.word = s.words[wordIndex];
     view.wordPosition = s.pauseUntil ? position + 1 : position;
-    view.info = `Слово ${wordIndex + 1} / ${s.words.length} · ⏱ ${formatTime(now - s.startedAt)}`;
+    view.info = s.type === "word"
+      ? `${Math.min(s.index + 1, s.letters.length)} / ${s.letters.length}`
+      : `Слово ${wordIndex + 1} / ${s.words.length} · ⏱ ${formatTime(now - s.startedAt)}`;
   }
   ui.renderPlay(view);
 }
@@ -276,6 +318,13 @@ function finishSession(now) {
     title = "Тренировка окончена!";
     rows.unshift(["Букв за минуту", `${score}`]);
     rows.push(["Лучший результат", `${storage.loadProgress().bestTraining}`]);
+  }
+  if (s.type === "word") {
+    storage.saveWord(s.words[0], stars);
+    title = `Слово «${s.words[0]}» собрано!`;
+    rows.push(["Время", formatTime(timeMs)]);
+    const collected = Object.keys(storage.loadProgress().words).length;
+    rows.push(["В коллекции", `${collected} из ${WORDS.length} слов`]);
   }
   if (s.type === "exam") {
     // Слова разной длины, поэтому для рекорда считаем время на ОДНУ букву — так честно.
