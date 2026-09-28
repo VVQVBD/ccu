@@ -45,6 +45,9 @@ ui.onAction((action, button) => {
   if (action === "menu") game.showMenu();
   if (action === "records") game.showRecords();
   if (action === "words") game.showWords();
+  if (action === "alphabet") game.showAlphabet();
+  if (action === "alpha-filter") ui.renderAlphabet(button.dataset.filter);
+  if (action === "alpha-letter") ui.showAlphaDetail(button.dataset.letter);
   if (action === "word") game.start("word", now, button.dataset.word);
   if (action === "write") game.startWriting();
   if (action === "write-back") writing.backspace();
@@ -194,7 +197,8 @@ function debugText(f) {
   }
   lines.push(`большой: угол ${f.thumbAngle.toFixed(0)}° отведён ${f.thumbToIndexBase.toFixed(2)} вдоль ${f.thumbToIndexMiddle.toFixed(2)}`);
   lines.push(`касается: ${f.touchedFinger || "—"}   просвет ${f.gap.toFixed(2)}   разброс ${f.spread.toFixed(2)}`);
-  lines.push(`размер ${f.palmOnScreen.toFixed(2)}   наклон ${f.tilt.toFixed(0)}°   край ${f.atEdge}`);
+  lines.push(`размер ${f.palmOnScreen.toFixed(2)}   наклон ${f.tilt.toFixed(0)}° (${f.direction})   край ${f.atEdge}`);
+  lines.push(`указ↔средн: раствор ${f.indexMiddleGap.toFixed(2)}   скрещены ${f.crossValue.toFixed(2)} ${f.fingersCrossed ? "ДА" : "нет"}`);
   return lines.join("\n");
 }
 
