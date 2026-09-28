@@ -41,6 +41,20 @@ export function failedChecks(letterKey, f) {
   return LETTERS[letterKey].checks.filter((check) => !check.pass(f));
 }
 
+// Какую букву сейчас показывают (для свободного письма). Рука должна быть в порядке
+// (общие проверки) и полностью совпадать с одной из 10 букв. Возвращает
+// { letter, problem }: букву или null, и текст общей проблемы, если она есть.
+export function recognizeLetter(f) {
+  for (const key in LETTERS) {
+    if (failedChecks(key, f).length === 0) {
+      const problem = findGeneralProblem(f, LETTERS[key]);
+      return problem ? { letter: null, problem: problem.text } : { letter: key, problem: null };
+    }
+  }
+  const problem = findGeneralProblem(f, {});
+  return { letter: null, problem: problem ? problem.text : null };
+}
+
 // Ищет другую букву, с которой рука совпадает полностью. Нужна для «Сейчас похоже на…».
 export function findLookalike(f, currentKey) {
   for (const key in LETTERS) {
