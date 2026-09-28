@@ -91,6 +91,7 @@ function onLoggedIn(cloudProgress) {
 }
 
 async function logout() {
+  game.stop(); // сначала останавливаем текущий урок/тренировку, чтобы результат не записался гостю
   await auth.signOut();
   storage.setOwner(null);
   ui.setUser(null);
@@ -114,12 +115,16 @@ async function init() {
 // «Начать»: показываем приложение и (один раз) включаем камеру.
 async function openApp() {
   ui.showApp();
+  // Камеру включаем только при первом «Начать» (флаг ставим сразу — на случай двойного нажатия).
+  const firstStart = !cameraStarted;
+  cameraStarted = true;
+  if (firstStart) ui.setStageStatus("Подключаемся…");
+  await authReady; // ждём, пока выяснится, вошёл ли игрок раньше, — иначе покажем вход зря
   // Если аккаунты включены и игрок не вошёл — сначала экран входа.
   if (auth.accountsEnabled() && !auth.getPlayer()) ui.showScreen("auth");
   else game.showMenu();
 
-  if (cameraStarted) return;
-  cameraStarted = true;
+  if (!firstStart) return;
   try {
     ui.setStageStatus("Включаем камеру… Разреши доступ, если браузер спросит.");
     await startCamera(video);
@@ -187,4 +192,5 @@ function debugText(f) {
   return lines.join("\n");
 }
 
-init();
+// Промис запуска: openApp() ждёт его, прежде чем решить, показать вход или меню.
+const authReady = init();
