@@ -5,7 +5,7 @@
 
 Команда **CCU** · Хакатон ADMIT «Motion» 2026 · Направление: **C / FREE** (обучение)
 
-🔗 **Попробовать:** https://cvvstealer000.github.io/ccures/ (нужна веб-камера; работает и на телефоне)
+🔗 **Попробовать:** https://bikineevaviktoria7-create.github.io/ccu/ (нужна веб-камера; работает и на телефоне)
 
 ---
 
