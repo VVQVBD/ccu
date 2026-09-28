@@ -84,3 +84,6 @@ export const EXAM_WORDS_COUNT = 3;           // сколько слов в эк�
 export const SHOW_SKIP_AFTER_MS = 10000;     // через 10 с на одной букве появляется кнопка «Пропустить»
 export const STARS_3_ACCURACY = 90;          // ★★★ — точность от 90%
 export const STARS_2_ACCURACY = 70;          // ★★ — от 70%
+// Буква считается «с ошибкой», если по ней показали 2 подсказки и больше.
+// Одну подсказку получают почти все, пока складывают пальцы, — это обучение, а не ошибка.
+export const MISTAKE_HINTS_COUNT = 2;

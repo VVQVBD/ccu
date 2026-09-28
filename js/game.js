@@ -15,6 +15,7 @@ import { LESSONS, WORDS } from "./letters.js";
 import { LetterJudge } from "./mistakes.js";
 import {
   TRAINING_DURATION_S, EXAM_WORDS_COUNT, SHOW_SKIP_AFTER_MS, STARS_3_ACCURACY, STARS_2_ACCURACY,
+  MISTAKE_HINTS_COUNT,
 } from "./config.js";
 import * as ui from "./ui.js";
 import * as storage from "./storage.js";
@@ -129,7 +130,9 @@ function finishLetter(now, skipped) {
   const judge = session.judge;
   session.results.push({
     letter: judge.letterKey,
-    hadMistake: skipped || judge.hadMistake,
+    // Одна подсказка — это нормальное обучение, а не ошибка. Ошибка — если понадобилось
+    // MISTAKE_HINTS_COUNT подсказок или больше, либо букву пропустили.
+    hadMistake: skipped || judge.mistakeCount >= MISTAKE_HINTS_COUNT,
     mistakes: judge.mistakeCount + (skipped ? 1 : 0),
     skipped,
   });
@@ -278,7 +281,7 @@ function finishSession(now) {
 // «Потренируй ещё: Н, Р» — буквы, где было больше всего подсказок.
 function hardLettersText(results) {
   const hard = results
-    .filter((r) => r.mistakes > 0)
+    .filter((r) => r.hadMistake)
     .sort((a, b) => b.mistakes - a.mistakes)
     .map((r) => r.letter);
   const unique = [...new Set(hard)].slice(0, 3);
