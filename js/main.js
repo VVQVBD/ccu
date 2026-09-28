@@ -1,6 +1,9 @@
 // ============================================================
 // main.js — точка входа. Отсюда всё запускается.
 //
+// Путь пользователя: главная (landing.js) → «Начать» → включаем камеру →
+// вход или «без входа» (auth.js) → меню → урок / тренировка / экзамен (game.js).
+//
 // Путь одного кадра (подробно — docs/HOW-IT-WORKS.md):
 //   камера (camera.js) → MediaPipe находит 21 точку (hand-tracker.js)
 //   → признаки пальцев (hand-features.js) → игра проверяет букву (game.js + mistakes.js)
@@ -14,19 +17,25 @@ import { computeFeatures, resetSmoothing, isPointingGesture } from "./hand-featu
 import { fitCanvas, drawHand, clearCanvas } from "./draw.js";
 import * as game from "./game.js";
 import * as ui from "./ui.js";
+import * as auth from "./auth.js";
+import * as storage from "./storage.js";
 import { toggleSound } from "./sound.js";
+import { initLanding } from "./landing.js";
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("overlay");
 // Отладочная панель с числами признаков: открыть сайт с ?debug=1 в конце адреса.
 const DEBUG = new URLSearchParams(location.search).has("debug");
 
+let cameraStarted = false;
 let handWasVisible = false;
 
 // ---------- Кнопки ----------
 
 ui.onAction((action, button) => {
   const now = performance.now();
+  if (action === "start") openApp();
+  if (action === "home") ui.showLanding();
   if (action === "lesson") game.start("lesson", now, Number(button.dataset.lesson));
   if (action === "training") game.start("training", now);
   if (action === "exam") game.start("exam", now);
@@ -36,18 +45,81 @@ ui.onAction((action, button) => {
   if (action === "records") game.showRecords();
   if (action === "sound") ui.setSoundLabel(toggleSound());
   if (action === "retry") location.reload();
+  if (action === "auth-tab") ui.switchAuthTab(button.dataset.tab);
+  if (action === "guest") game.showMenu();
+  if (action === "logout") logout();
   if (action === "reset" && confirm("Стереть весь прогресс и рекорды?")) {
-    import("./storage.js").then((storage) => {
-      storage.resetProgress();
-      game.showRecords();
-    });
+    storage.resetProgress();
+    game.showRecords();
   }
 });
 
+// ---------- Вход и регистрация ----------
+
+document.getElementById("login-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = new FormData(event.target);
+  submitAuth(() => auth.signIn(form.get("email"), form.get("password")));
+});
+
+document.getElementById("register-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = new FormData(event.target);
+  submitAuth(() => auth.signUp(form.get("username"), form.get("email"), form.get("password")));
+});
+
+// Общая часть входа и регистрации: ждём ответ, показываем ошибку или открываем меню.
+async function submitAuth(request) {
+  ui.setAuthError(null);
+  ui.setAuthBusy(true);
+  try {
+    const cloudProgress = await request();
+    onLoggedIn(cloudProgress);
+    game.showMenu();
+  } catch (error) {
+    ui.setAuthError(error.message);
+  } finally {
+    ui.setAuthBusy(false);
+  }
+}
+
+function onLoggedIn(cloudProgress) {
+  const player = auth.getPlayer();
+  if (!player) return;
+  storage.setOwner(player.id, cloudProgress); // у каждого игрока свой прогресс
+  ui.setUser(player.username);
+}
+
+async function logout() {
+  await auth.signOut();
+  storage.setOwner(null);
+  ui.setUser(null);
+  ui.switchAuthTab("login");
+  ui.showScreen("auth");
+}
+
 // ---------- Запуск ----------
 
+// Главная страница видна сразу. Заодно проверяем, не вошёл ли игрок раньше.
 async function init() {
-  game.showMenu();
+  initLanding();
+  try {
+    const cloudProgress = await auth.initAuth();
+    onLoggedIn(cloudProgress);
+  } catch (error) {
+    console.warn("Аккаунты недоступны:", error);
+  }
+}
+
+// «Начать»: показываем приложение и (один раз) включаем камеру.
+async function openApp() {
+  ui.showApp();
+  // Если аккаунты включены и игрок не вошёл — сначала экран входа.
+  if (auth.accountsEnabled() && !auth.getPlayer()) ui.showScreen("auth");
+  else game.showMenu();
+
+  if (cameraStarted) return;
+  cameraStarted = true;
   try {
     ui.setStageStatus("Включаем камеру… Разреши доступ, если браузер спросит.");
     await startCamera(video);
@@ -64,6 +136,10 @@ async function init() {
 // ---------- Главный цикл: один проход = один кадр ----------
 
 function loop() {
+  requestAnimationFrame(loop);
+  // На главной странице камера не нужна — не тратим силы компьютера.
+  if (document.getElementById("app").hidden) return;
+
   const now = performance.now();
   const hand = detectHand(video);
 
@@ -96,8 +172,6 @@ function loop() {
 
   ui.updateCursor(hand, pointing, now);
   if (DEBUG) ui.showDebug(debugText(features));
-
-  requestAnimationFrame(loop);
 }
 
 // Текст для отладочной панели: все числа, по которым принимаются решения.
