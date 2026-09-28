@@ -58,6 +58,17 @@ function thumbTouches(target, hintWhenNothing) {
   };
 }
 
+// Сводная проверка: если неправильных пальцев 2 и больше — одна общая подсказка
+// («Выпрями все пальцы»), а не четыре по очереди. Если неправильный только один —
+// проверка проходит, и дальше сработает точная подсказка про этот палец.
+function mostFingers(state, hintText) {
+  return {
+    finger: null,
+    pass: (f) => Object.values(f.fingers).filter((x) => x.state !== state).length <= 1,
+    hint: () => hintText,
+  };
+}
+
 // Большой палец НЕ отведён в сторону.
 function thumbNotOut(hintText) {
   return { finger: "thumb", pass: (f) => !f.thumbOut, hint: () => hintText };
@@ -70,6 +81,7 @@ export const LETTERS = {
     lesson: 1,
     description: "Ладонь раскрыта, все пальцы прямые и сомкнуты, большой палец прижат к ладони.",
     checks: [
+      mostFingers(STRAIGHT, "Раскрой ладонь — выпрями все пальцы"),
       straight("index"), straight("middle"), straight("ring"), straight("pinky"),
       thumbNotOut("Прижми большой палец к ладони"),
       { finger: null, pass: (f) => f.fingersTogether, hint: () => "Сомкни пальцы — между ними не должно быть щелей" },
@@ -80,6 +92,7 @@ export const LETTERS = {
     lesson: 1,
     description: "Кулак. Большой палец выпрямлен и прижат сбоку к указательному.",
     checks: [
+      mostFingers(BENT, "Сожми пальцы в кулак"),
       bent("index"), bent("middle"), bent("ring"), bent("pinky"),
       { finger: "thumb", pass: (f) => f.thumbStraight, hint: () => "Не клади большой палец на пальцы — выпрями его" },
       { finger: "thumb", pass: (f) => f.thumbAlongIndex, hint: () => "Прижми большой палец сбоку к указательному" },
