@@ -71,7 +71,8 @@ export function showMenu() {
     action: "words", title: "Слова", sub: "Письмо рукой и словарь",
     locked: !progress.lessons[1],
   });
-  items.push({ action: "records", title: "Рекорды", sub: "и прогресс" });
+  items.push({ action: "alphabet", title: "Алфавит", sub: "Все 33 буквы" });
+  items.push({ action: "records", title: "Рекорды", sub: "и прогресс", wide: true });
   const player = getPlayer();
   ui.renderMenu(items, player ? `Привет, ${player.username}!` : "Учим дактильную азбуку");
   ui.showScreen("menu");
@@ -125,10 +126,18 @@ export function showWords() {
   ui.showScreen("words");
 }
 
-// Тренировка одного слова из словаря: буквы по очереди, схема руки видна всегда.
+// Раздел «Алфавит»: все 33 буквы.
+export function showAlphabet() {
+  session = null;
+  ui.renderAlphabet("all");
+  ui.showScreen("alphabet");
+}
+
+// Тренировка одного слова из словаря (или одной буквы из «Алфавита»):
+// буквы по очереди, схема руки видна всегда.
 function startWord(word, now) {
   session = {
-    type: "word", title: `Слово «${word}»`, words: [word],
+    type: "word", title: word.length === 1 ? `Буква «${word}»` : `Слово «${word}»`, words: [word],
     letters: [...word], index: 0, results: [], startedAt: now,
   };
   beginLetter(now);
@@ -319,7 +328,10 @@ function finishSession(now) {
     rows.unshift(["Букв за минуту", `${score}`]);
     rows.push(["Лучший результат", `${storage.loadProgress().bestTraining}`]);
   }
-  if (s.type === "word") {
+  if (s.type === "word" && s.words[0].length === 1) {
+    title = `Буква «${s.words[0]}» получилась!`;
+    rows.push(["Время", formatTime(timeMs)]);
+  } else if (s.type === "word") {
     storage.saveWord(s.words[0], stars);
     title = `Слово «${s.words[0]}» собрано!`;
     rows.push(["Время", formatTime(timeMs)]);
