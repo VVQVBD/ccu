@@ -20,11 +20,14 @@ const $ = (id) => document.getElementById(id);
 export function showLanding() {
   $("app").hidden = true;
   $("landing").hidden = false;
+  document.body.classList.remove("app-open");
 }
 
 export function showApp() {
   $("landing").hidden = true;
   $("app").hidden = false;
+  // В приложении останавливаем анимацию фона: телефону нужны силы на распознавание руки.
+  document.body.classList.add("app-open");
   window.scrollTo(0, 0);
 }
 
@@ -129,7 +132,10 @@ export function renderPlay(view) {
   // Слово в экзамене: пройденные буквы зелёные, текущая подсвечена.
   const word = $("play-word");
   word.hidden = !view.word;
-  if (view.word) {
+  // Перерисовываем слово, только когда оно или позиция изменились (а не каждый кадр).
+  const wordKey = view.word ? view.word + view.wordPosition : "";
+  if (view.word && word.dataset.key !== wordKey) {
+    word.dataset.key = wordKey;
     word.innerHTML = [...view.word].map((ch, i) => {
       const cls = i < view.wordPosition ? "done" : i === view.wordPosition ? "current" : "";
       return `<span class="${cls}">${ch}</span>`;
@@ -150,7 +156,7 @@ export function renderPlay(view) {
 }
 
 // Кольцо удержания вокруг буквы: progress от 0 до 1.
-const RING_LENGTH = 339.3;
+const RING_LENGTH = 2 * Math.PI * 54; // длина окружности кольца: радиус r="54" в index.html
 export function setHoldProgress(progress) {
   $("hold-ring-fill").style.strokeDashoffset = RING_LENGTH * (1 - Math.min(1, progress));
 }
@@ -208,8 +214,9 @@ export function renderRecords(rows, hardText) {
   $("records-hard").textContent = hardText;
 }
 
-// Общая таблица рекордов. board — из auth.js, myName — имя текущего игрока.
-export function renderLeaderboard(board, myName, formatTime) {
+// Общая таблица рекордов. board — из auth.js, myName — имя текущего игрока,
+// formatExam — как показать результат экзамена (время на букву).
+export function renderLeaderboard(board, myName, formatExam) {
   const box = $("leaderboard");
   if (!board) {
     box.hidden = true;
@@ -221,7 +228,7 @@ export function renderLeaderboard(board, myName, formatTime) {
     : `<p class="lb-empty">Пока никого — стань первым!</p>`;
   box.innerHTML = `
     <div class="lb-col"><h3>⚡ Тренировка</h3>${list(board.training, (r) => `${r.best_training} букв`)}</div>
-    <div class="lb-col"><h3>🎓 Экзамен</h3>${list(board.exam, (r) => formatTime(r.best_exam_ms))}</div>`;
+    <div class="lb-col"><h3>🎓 Экзамен</h3>${list(board.exam, (r) => formatExam(r.best_exam_ms))}</div>`;
   box.hidden = false;
 }
 

@@ -79,6 +79,8 @@ b { font-weight: 800; }
 .aurora span:nth-child(1) { background: var(--violet); top: -20vmax; left: -15vmax; }
 .aurora span:nth-child(2) { background: var(--pink); bottom: -25vmax; right: -15vmax; animation-duration: 32s; opacity: 0.25; }
 .aurora span:nth-child(3) { background: var(--amber); top: 30%; left: 40%; width: 30vmax; height: 30vmax; animation-duration: 22s; opacity: 0.15; }
+/* В приложении фон замирает — телефону нужны силы на распознавание руки */
+body.app-open .aurora span { animation-play-state: paused; }
 @keyframes drift {
   0% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(8vmax, 6vmax) scale(1.1); }

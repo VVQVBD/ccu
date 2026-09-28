@@ -83,5 +83,8 @@ function startDemo() {
   };
 
   show();
-  setInterval(show, DEMO_INTERVAL_MS);
+  // Меняем букву, только пока главная видна: в приложении это лишняя работа.
+  setInterval(() => {
+    if (!document.getElementById("landing").hidden) show();
+  }, DEMO_INTERVAL_MS);
 }
