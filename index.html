@@ -1,110 +1,274 @@
 <!doctype html>
 <!--
-  index.html — единственная страница приложения «Азбука жестов».
-  Здесь разметка всех экранов: меню, игра (урок / тренировка / экзамен), итоги, рекорды.
-  Показывает нужный экран ui.js (добавляет класс active). Запуск всего — js/main.js.
+  index.html — единственная страница «Азбуки жестов».
+  Две части:
+    #landing — главная: рассказ о проекте (что это, зачем, как работает, буквы, команда).
+    #app     — само приложение: камера + экраны (вход, меню, игра, итоги, рекорды).
+  Какой экран показать, решает ui.js (класс active / атрибут hidden). Запуск — js/main.js.
 -->
 <html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Азбука жестов — учим дактиль через камеру</title>
-  <meta name="description" content="Тренажёр русской дактильной азбуки: покажи букву рукой в камеру — приложение подскажет, какой палец поправить.">
+  <meta name="description" content="Тренажёр русской дактильной азбуки: покажи букву рукой в камеру — приложение проверит каждый палец и подскажет, что поправить.">
+  <meta name="theme-color" content="#0b0a1f">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✋</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="logo"><span class="logo-mark">✋</span> Азбука жестов</div>
-    <div class="topbar-buttons">
-      <button class="btn btn-small" data-action="sound" id="sound-button">🔊 Звук</button>
-      <button class="btn btn-small" data-action="menu" id="menu-button" hidden>☰ Меню</button>
-    </div>
-  </header>
+  <!-- Живой фон: цветные пятна медленно плавают (чистый CSS) -->
+  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 
-  <main class="layout">
-    <!-- Камера и скелет руки поверх неё -->
-    <section class="stage">
-      <video id="video" autoplay playsinline muted></video>
-      <canvas id="overlay"></canvas>
-      <div class="stage-status" id="stage-status">
-        <div class="spinner"></div>
-        <p id="stage-status-text">Загружаем распознавание руки…</p>
-        <button class="btn" data-action="retry" id="retry-button" hidden>Попробовать снова</button>
+  <!-- ================= ГЛАВНАЯ: О ПРОЕКТЕ ================= -->
+  <div id="landing">
+    <nav class="nav">
+      <a class="logo" href="#top"><span class="logo-mark">✋</span> Азбука жестов</a>
+      <div class="nav-links">
+        <a href="#how">Как работает</a>
+        <a href="#mistakes">Режим «ошибка»</a>
+        <a href="#letters">Буквы</a>
+        <a href="#team">Команда</a>
       </div>
-      <div class="pointer-tip" id="pointer-tip">☝️ Указка: наведи палец на кнопку и подержи</div>
-    </section>
+      <button class="btn btn-primary btn-small" data-action="start">Начать</button>
+    </nav>
 
-    <section class="panel">
-      <!-- ЭКРАН: меню -->
-      <div class="screen active" id="screen-menu">
-        <h1>Учим дактильную азбуку</h1>
-        <p class="lead">Показывай буквы рукой в камеру — приложение проверит каждый палец и подскажет, что поправить.</p>
-        <div class="howto">
-          <div class="howto-item"><span>☝️</span>Подними <b>только указательный палец</b> — это курсор</div>
-          <div class="howto-item"><span>⏳</span>Наведи его на кнопку и <b>подержи</b> — она нажмётся</div>
-          <div class="howto-item"><span>🖐️</span>Руку держи <b>ладонью к камере</b>, пальцами вверх</div>
+    <header class="hero" id="top">
+      <div class="hero-text">
+        <p class="badge reveal">ADMIT Hackathon «Motion» 2026 · команда CCU</p>
+        <h1 class="reveal" style="--i:1">Покажи букву —<br><span class="gradient-text">камера поймёт</span></h1>
+        <p class="lead reveal" style="--i:2">Тренажёр русской дактильной азбуки. Складываешь пальцы перед веб-камерой — приложение проверяет каждый палец и подсказывает, что именно поправить. Как живой преподаватель, только в браузере.</p>
+        <div class="hero-buttons reveal" style="--i:3">
+          <button class="btn btn-primary btn-big" data-action="start">Начать учиться <span class="arrow">→</span></button>
+          <a class="btn btn-ghost btn-big" href="#how">Как это работает</a>
         </div>
-        <div class="menu-grid" id="menu-grid">
-          <!-- Кнопки уроков и режимов рисует ui.js (renderMenu) -->
+        <div class="hero-facts reveal" style="--i:4">
+          <div><b>10</b><span>букв-жестов</span></div>
+          <div><b>0</b><span>установок</span></div>
+          <div><b>100%</b><span>в браузере</span></div>
         </div>
       </div>
 
-      <!-- ЭКРАН: урок / тренировка / экзамен -->
-      <div class="screen" id="screen-play">
-        <div class="play-header">
-          <span class="play-mode" id="play-mode">Урок 1</span>
-          <span class="play-info" id="play-info">1 / 3</span>
+      <!-- Живая демонстрация: буквы сменяют друг друга, рядом — пример подсказки -->
+      <div class="hero-demo reveal" style="--i:2">
+        <div class="demo-card">
+          <div class="demo-top"><span class="dot"></span> Распознаю…</div>
+          <div class="demo-hand" id="demo-hand"></div>
+          <div class="demo-letter" id="demo-letter">В</div>
+          <div class="demo-hint" id="demo-hint">💡 Сомкни пальцы — между ними не должно быть щелей</div>
         </div>
-        <div class="word" id="play-word" hidden></div>
-        <div class="target">
-          <svg class="hold-ring" viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="hold-ring-bg" cx="60" cy="60" r="54"></circle>
-            <circle class="hold-ring-fill" id="hold-ring-fill" cx="60" cy="60" r="54"></circle>
-          </svg>
-          <div class="target-letter" id="target-letter">В</div>
-          <div class="praise" id="praise" hidden>Отлично!</div>
-        </div>
-        <div class="reference" id="reference">
-          <img id="reference-image" alt="">
-          <p id="reference-text"></p>
-        </div>
-        <div class="hint" id="hint" hidden></div>
-        <div class="play-buttons">
-          <button class="btn" data-action="skip" id="skip-button" hidden>Пропустить ⏭</button>
+        <div class="orbit" aria-hidden="true">
+          <span style="--a:0deg">А</span><span style="--a:60deg">У</span><span style="--a:120deg">Ы</span>
+          <span style="--a:180deg">Ш</span><span style="--a:240deg">Н</span><span style="--a:300deg">С</span>
         </div>
       </div>
+    </header>
 
-      <!-- ЭКРАН: итоги -->
-      <div class="screen" id="screen-results">
-        <h1 id="results-title">Урок пройден!</h1>
-        <div class="stars" id="results-stars">★★★</div>
-        <div class="record-badge" id="results-record" hidden>🏆 Новый рекорд!</div>
-        <dl class="stats" id="results-stats"></dl>
-        <p class="hard-letters" id="results-hard"></p>
-        <div class="menu-grid">
-          <button class="btn btn-primary" data-action="again">Ещё раз ↻</button>
-          <button class="btn" data-action="menu">В меню</button>
-        </div>
-      </div>
-
-      <!-- ЭКРАН: рекорды -->
-      <div class="screen" id="screen-records">
-        <h1>Рекорды и прогресс</h1>
-        <dl class="stats" id="records-stats"></dl>
-        <p class="hard-letters" id="records-hard"></p>
-        <div class="menu-grid">
-          <button class="btn" data-action="menu">В меню</button>
-          <button class="btn btn-danger" data-action="reset">Сбросить прогресс</button>
-        </div>
+    <section class="section" id="why">
+      <h2 class="reveal">Зачем это нужно</h2>
+      <p class="section-lead reveal">Дактильная азбука — это алфавит на пальцах: каждой букве соответствует своё положение руки. Им называют имена, города и новые слова в жестовом языке. Выучить азбуку по картинке трудно: никто не скажет, что палец согнут не так. Мы сделали тренажёр, который это видит.</p>
+      <div class="cards-3">
+        <article class="card reveal" style="--i:1"><div class="card-icon">👨‍👩‍👧</div><h3>Родным и друзьям</h3><p>Тем, у кого в семье или среди друзей есть глухие и слабослышащие люди, — чтобы начать общаться.</p></article>
+        <article class="card reveal" style="--i:2"><div class="card-icon">🎓</div><h3>Студентам и волонтёрам</h3><p>Будущим педагогам, сурдопереводчикам и волонтёрам — для ежедневной тренировки без преподавателя.</p></article>
+        <article class="card reveal" style="--i:3"><div class="card-icon">✨</div><h3>Всем любопытным</h3><p>Попробовать новый язык за пять минут: урок, тренировка на скорость и экзамен «собери слово».</p></article>
       </div>
     </section>
-  </main>
+
+    <section class="section" id="how">
+      <h2 class="reveal">Как это работает</h2>
+      <p class="section-lead reveal">Один законченный путь — от движения руки до результата. Всё считается прямо в браузере, видео никуда не отправляется.</p>
+      <div class="steps">
+        <div class="step reveal" style="--i:1"><span class="step-num">01</span><h3>Движение</h3><p>Ты показываешь букву рукой перед обычной веб-камерой ноутбука или телефона.</p></div>
+        <div class="step reveal" style="--i:2"><span class="step-num">02</span><h3>Распознавание</h3><p>MediaPipe находит 21 точку руки. Дальше — <b>наша логика</b>: углы в суставах, касания пальцев, поворот ладони.</p></div>
+        <div class="step reveal" style="--i:3"><span class="step-num">03</span><h3>Реакция</h3><p>Скелет руки на экране: верные пальцы зелёные, ошибочные — красные. Держишь букву — заполняется кольцо.</p></div>
+        <div class="step reveal" style="--i:4"><span class="step-num">04</span><h3>Результат</h3><p>Итоги: точность, время, звёзды, трудные буквы, рекорды. Прогресс сохраняется в твоём аккаунте.</p></div>
+      </div>
+    </section>
+
+    <section class="section split" id="mistakes">
+      <div>
+        <h2 class="reveal">Режим «ошибка»</h2>
+        <p class="section-lead reveal">Приложение не просто говорит «не распознано». Каждая буква — это список проверок по важности, и мы показываем <b>одну главную ошибку</b>: что не так и как исправить.</p>
+        <ul class="ticks reveal">
+          <li>Какой палец выпрямить или согнуть</li>
+          <li>Какого пальца должен касаться большой</li>
+          <li>«Сейчас похоже на букву И» — если перепутал</li>
+          <li>Рука далеко, у края кадра, повёрнута тыльной стороной</li>
+        </ul>
+      </div>
+      <div class="hint-stack">
+        <div class="hint-bubble reveal" style="--i:1"><span class="hb-letter">Н</span>Большой палец касается среднего, а нужно — безымянного</div>
+        <div class="hint-bubble reveal" style="--i:2"><span class="hb-letter">Ы</span>Сейчас похоже на «И». Выпрями указательный палец</div>
+        <div class="hint-bubble reveal" style="--i:3"><span class="hb-letter">С</span>Оставь просвет между большим и указательным — иначе получится «О»</div>
+        <div class="hint-bubble ok reveal" style="--i:4"><span class="hb-letter">В</span>Отлично! Буква засчитана</div>
+      </div>
+    </section>
+
+    <section class="section" id="letters">
+      <h2 class="reveal">10 букв для старта</h2>
+      <p class="section-lead reveal">Три урока от простого к сложному. Мы выбрали буквы без движения, которые надёжно различаются по точкам руки, — и из них складываются слова: СОВА, НОРА, СЫР, ШАР…</p>
+      <div class="letters-grid" id="letters-grid"><!-- карточки рисует landing.js --></div>
+    </section>
+
+    <section class="section" id="tech">
+      <h2 class="reveal">Технологии</h2>
+      <div class="pills reveal">
+        <span>HTML · CSS · JavaScript</span><span>MediaPipe Hand Landmarker</span><span>Своя логика распознавания</span>
+        <span>Supabase — аккаунты и рейтинг</span><span>Web Audio — звуки</span><span>GitHub Pages</span>
+      </div>
+      <p class="privacy reveal">🔒 Видео с камеры не покидает твоё устройство: распознавание работает прямо в браузере.</p>
+    </section>
+
+    <section class="section" id="team">
+      <h2 class="reveal">Команда CCU</h2>
+      <div class="team">
+        <div class="member reveal" style="--i:1"><div class="avatar" style="--h:330">Р</div><h3>Руслана Садыкова</h3><p>Капитан · распознавание букв и режим «ошибка»</p></div>
+        <div class="member reveal" style="--i:2"><div class="avatar" style="--h:260">К</div><h3>Камилла Карбозова</h3><p>Фронтенд · интерфейс, дизайн, скелет руки</p></div>
+        <div class="member reveal" style="--i:3"><div class="avatar" style="--h:190">В</div><h3>Виктория Бикинеева</h3><p>DevOps · камера, MediaPipe, деплой</p></div>
+        <div class="member reveal" style="--i:4"><div class="avatar" style="--h:35">М</div><h3>Мария Кругликова</h3><p>База данных · аккаунты, прогресс, рекорды</p></div>
+      </div>
+    </section>
+
+    <section class="section cta-final reveal">
+      <h2>Готов попробовать?</h2>
+      <p>Понадобится только веб-камера. Первая буква — меньше чем за минуту.</p>
+      <button class="btn btn-primary btn-big" data-action="start">Начать учиться <span class="arrow">→</span></button>
+    </section>
+
+    <footer class="footer">
+      <span>✋ Азбука жестов · команда CCU · ADMIT Hackathon «Motion» 2026</span>
+      <a href="https://github.com/bikineevaviktoria7-create/ccu" target="_blank" rel="noopener">Код на GitHub</a>
+    </footer>
+  </div>
+
+  <!-- ================= ПРИЛОЖЕНИЕ ================= -->
+  <div id="app" hidden>
+    <header class="topbar">
+      <button class="logo logo-button" data-action="home" title="На главную"><span class="logo-mark">✋</span> Азбука жестов</button>
+      <div class="topbar-buttons">
+        <span class="user-chip" id="user-chip" hidden></span>
+        <button class="btn btn-small" data-action="sound" id="sound-button">🔊</button>
+        <button class="btn btn-small" data-action="menu" id="menu-button" hidden>☰ Меню</button>
+        <button class="btn btn-small" data-action="logout" id="logout-button" hidden>Выйти</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Камера и скелет руки поверх неё -->
+      <section class="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="stage-status" id="stage-status">
+          <div class="spinner"></div>
+          <p id="stage-status-text">Загружаем распознавание руки…</p>
+          <button class="btn" data-action="retry" id="retry-button" hidden>Попробовать снова</button>
+        </div>
+        <div class="pointer-tip" id="pointer-tip">☝️ Указка: наведи палец на кнопку и подержи</div>
+        <div class="stage-flash" id="stage-flash"></div>
+      </section>
+
+      <section class="panel">
+        <!-- ЭКРАН: вход и регистрация -->
+        <div class="screen" id="screen-auth">
+          <h1>Добро пожаловать!</h1>
+          <p class="lead">Войди, чтобы прогресс сохранялся и ты попал в общую таблицу рекордов.</p>
+          <div class="tabs">
+            <button class="tab active" data-action="auth-tab" data-tab="login">Вход</button>
+            <button class="tab" data-action="auth-tab" data-tab="register">Регистрация</button>
+          </div>
+          <form class="auth-form" id="login-form">
+            <label>Почта<input type="email" name="email" autocomplete="email" required></label>
+            <label>Пароль<input type="password" name="password" autocomplete="current-password" required minlength="6"></label>
+            <button class="btn btn-primary" type="submit">Войти</button>
+          </form>
+          <form class="auth-form" id="register-form" hidden>
+            <label>Имя в рейтинге<input type="text" name="username" autocomplete="nickname" required minlength="2" maxlength="20"></label>
+            <label>Почта<input type="email" name="email" autocomplete="email" required></label>
+            <label>Пароль (от 6 символов)<input type="password" name="password" autocomplete="new-password" required minlength="6"></label>
+            <button class="btn btn-primary" type="submit">Создать аккаунт</button>
+          </form>
+          <p class="auth-error" id="auth-error" hidden></p>
+          <div class="divider"><span>или</span></div>
+          <button class="btn btn-ghost btn-wide-full" data-action="guest">Играть без входа</button>
+          <p class="small-note">Без входа прогресс сохранится только в этом браузере.</p>
+        </div>
+
+        <!-- ЭКРАН: меню -->
+        <div class="screen" id="screen-menu">
+          <h1 id="menu-title">Учим дактильную азбуку</h1>
+          <div class="howto">
+            <div class="howto-item"><span>☝️</span><div>Подними <b>только указательный палец</b> — это курсор</div></div>
+            <div class="howto-item"><span>⏳</span><div>Наведи его на кнопку и <b>подержи</b> — она нажмётся</div></div>
+            <div class="howto-item"><span>🖐️</span><div>Буквы показывай <b>ладонью к камере</b>, пальцами вверх</div></div>
+          </div>
+          <div class="menu-grid" id="menu-grid"><!-- кнопки рисует ui.js (renderMenu) --></div>
+        </div>
+
+        <!-- ЭКРАН: урок / тренировка / экзамен -->
+        <div class="screen" id="screen-play">
+          <div class="play-header">
+            <span class="play-mode" id="play-mode">Урок 1</span>
+            <span class="play-info" id="play-info">1 / 3</span>
+          </div>
+          <div class="word" id="play-word" hidden></div>
+          <div class="target" id="target">
+            <svg class="hold-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <defs>
+                <linearGradient id="ring-gradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#22d3ee"/>
+                </linearGradient>
+              </defs>
+              <circle class="hold-ring-bg" cx="60" cy="60" r="54"></circle>
+              <circle class="hold-ring-fill" id="hold-ring-fill" cx="60" cy="60" r="54"></circle>
+            </svg>
+            <div class="target-letter" id="target-letter">В</div>
+            <div class="praise" id="praise" hidden>Отлично!</div>
+          </div>
+          <div class="reference" id="reference">
+            <div class="reference-hand" id="reference-hand"></div>
+            <p id="reference-text"></p>
+          </div>
+          <div class="hint" id="hint" hidden></div>
+          <div class="play-buttons">
+            <button class="btn" data-action="skip" id="skip-button" hidden>Пропустить ⏭</button>
+          </div>
+        </div>
+
+        <!-- ЭКРАН: итоги -->
+        <div class="screen" id="screen-results">
+          <h1 id="results-title">Урок пройден!</h1>
+          <div class="stars" id="results-stars"></div>
+          <div class="record-badge" id="results-record" hidden>🏆 Новый рекорд!</div>
+          <dl class="stats" id="results-stats"></dl>
+          <p class="hard-letters" id="results-hard"></p>
+          <div class="menu-grid">
+            <button class="btn btn-primary" data-action="again">Ещё раз ↻</button>
+            <button class="btn" data-action="menu">В меню</button>
+          </div>
+        </div>
+
+        <!-- ЭКРАН: рекорды -->
+        <div class="screen" id="screen-records">
+          <h1>Рекорды</h1>
+          <dl class="stats" id="records-stats"></dl>
+          <p class="hard-letters" id="records-hard"></p>
+          <div class="leaderboard" id="leaderboard" hidden></div>
+          <div class="menu-grid">
+            <button class="btn" data-action="menu">В меню</button>
+            <button class="btn btn-danger" data-action="reset">Сбросить прогресс</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <!-- Курсор-палец: двигается за кончиком указательного -->
   <div class="cursor" id="cursor" hidden></div>
+  <!-- Слой для конфетти -->
+  <canvas class="confetti" id="confetti"></canvas>
   <!-- Отладочная панель: открыть с ?debug=1 в адресе -->
   <pre class="debug" id="debug" hidden></pre>
 
