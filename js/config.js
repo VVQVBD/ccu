@@ -23,6 +23,15 @@ export const HAND_MODEL_URL =
 // к камере показывает «ориентация: back» — поменяй на true.
 export const HANDEDNESS_SWAPPED = false;
 
+// ---------- Supabase (аккаунты и общая таблица рекордов) ----------
+
+// Адрес проекта и ПУБЛИЧНЫЙ ключ (publishable / anon). Его можно хранить в коде сайта:
+// он виден всем, а базу защищают правила RLS из supabase/schema.sql.
+// Секретный ключ (secret / service_role) сюда НИКОГДА не вставлять.
+// Если оставить пустыми — аккаунты выключены, прогресс хранится только в браузере.
+export const SUPABASE_URL = "";
+export const SUPABASE_KEY = "";
+
 // ---------- Номера точек руки MediaPipe (карта — docs/GESTURES.md, 4.1) ----------
 
 export const WRIST = 0;
