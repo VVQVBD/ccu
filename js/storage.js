@@ -13,6 +13,7 @@
 //   bestTraining — лучший счёт тренировки (сколько букв за минуту)
 //   bestExamMs   — лучший экзамен: среднее время на одну букву, мс (слова разной длины — так честно)
 //   letters      — по каждой букве: сколько раз показали и сколько раз с ошибкой
+//   words        — собранные слова и звёзды за них: { "СОВА": 3, "НОС": 1 }
 //
 // Связь: game.js сохраняет результаты, main.js переключает владельца при входе/выходе.
 // ============================================================
@@ -27,7 +28,7 @@ function storageKey() {
 }
 
 function emptyProgress() {
-  return { lessons: {}, bestTraining: 0, bestExamMs: null, letters: {} };
+  return { lessons: {}, bestTraining: 0, bestExamMs: null, letters: {}, words: {} };
 }
 
 // Кто сейчас играет. cloudProgress — прогресс из облака (при входе), его объединяем с локальным.
@@ -46,8 +47,11 @@ function mergeProgress(a, b) {
   for (const l in b.letters) {
     if (!letters[l] || b.letters[l].shown > letters[l].shown) letters[l] = b.letters[l];
   }
+  const words = { ...a.words };
+  for (const w in b.words) words[w] = Math.max(words[w] || 0, b.words[w]);
   return {
     lessons,
+    words,
     bestTraining: Math.max(a.bestTraining || 0, b.bestTraining || 0),
     bestExamMs: exams.length ? Math.min(...exams) : null,
     letters,
@@ -107,6 +111,13 @@ export function saveLetterStats(letterResults) {
     if (hadMistake) stat.mistakes += 1;
     progress.letters[letter] = stat;
   }
+  saveProgress(progress);
+}
+
+// Слово собрано: запоминаем лучший результат по звёздам (в свободном письме — 1 звезда).
+export function saveWord(word, stars) {
+  const progress = loadProgress();
+  progress.words[word] = Math.max(progress.words[word] || 0, stars);
   saveProgress(progress);
 }
 

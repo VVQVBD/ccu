@@ -63,6 +63,7 @@ async function loadPlayer(userId) {
     bestTraining: data.best_training || 0,
     bestExamMs: data.best_exam_ms,
     letters: data.letters || {},
+    words: data.words || {},
   };
 }
 
@@ -113,13 +114,21 @@ export function waitForSaves() {
 }
 
 async function sendProgress(playerId, progress) {
-  const { error } = await supabase.from("players").update({
+  const row = {
     lessons: progress.lessons,
     best_training: progress.bestTraining,
     best_exam_ms: progress.bestExamMs,
     letters: progress.letters,
+    words: progress.words,
     updated_at: new Date().toISOString(),
-  }).eq("id", playerId);
+  };
+  let { error } = await supabase.from("players").update(row).eq("id", playerId);
+  // Если в базе ещё нет колонки words (не запущен supabase/003_words.sql) —
+  // сохраняем всё остальное, чтобы рекорды не потерялись.
+  if (error && /words/.test(error.message)) {
+    delete row.words;
+    ({ error } = await supabase.from("players").update(row).eq("id", playerId));
+  }
   if (error) console.warn("Не удалось сохранить прогресс в облако:", error.message);
 }
 
