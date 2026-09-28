@@ -40,6 +40,11 @@ function learnedLetters(progress) {
   return Object.keys(LESSONS).filter((n) => progress.lessons[n]).flatMap((n) => LESSONS[n]);
 }
 
+// Остановить текущий режим без итогов (например, при выходе из аккаунта).
+export function stop() {
+  session = null;
+}
+
 export function showMenu() {
   session = null;
   const progress = storage.loadProgress();
@@ -91,7 +96,7 @@ export function startExam(now) {
   const learned = learnedLetters(storage.loadProgress());
   // Только слова, все буквы которых уже пройдены.
   const available = WORDS.filter((w) => [...w].every((ch) => learned.includes(ch)));
-  const words = shuffle(available).slice(0, EXAM_WORDS_COUNT);
+  const words = pickExamWords(available);
   session = {
     type: "exam", title: "Экзамен", words,
     letters: words.flatMap((w) => [...w]), index: 0, results: [], startedAt: now,
@@ -273,10 +278,13 @@ function finishSession(now) {
     rows.push(["Лучший результат", `${storage.loadProgress().bestTraining}`]);
   }
   if (s.type === "exam") {
-    isRecord = storage.saveExamResult(timeMs);
+    // Слова разной длины, поэтому для рекорда считаем время на ОДНУ букву — так честно.
+    const msPerLetter = Math.round(timeMs / total);
+    isRecord = storage.saveExamResult(msPerLetter);
+    rows.push(["На одну букву", formatSeconds(msPerLetter)]);
     title = "Экзамен сдан!";
     rows.push(["Слова", s.words.join(", ")], ["Время", formatTime(timeMs)]);
-    rows.push(["Лучшее время", formatTime(storage.loadProgress().bestExamMs)]);
+    rows.push(["Лучший результат", formatSeconds(storage.loadProgress().bestExamMs)]);
   }
 
   ui.renderResults({ title, stars, isRecord, rows, hardText: hardLettersText(results) });
@@ -302,7 +310,7 @@ export async function showRecords() {
   const rows = [
     ["Пройдено уроков", `${lessonsDone} из ${Object.keys(LESSONS).length}`],
     ["Лучшая тренировка", progress.bestTraining ? `${progress.bestTraining} букв/мин` : "—"],
-    ["Лучший экзамен", progress.bestExamMs ? formatTime(progress.bestExamMs) : "—"],
+    ["Лучший экзамен", progress.bestExamMs ? formatSeconds(progress.bestExamMs) : "—"],
   ];
   // Самые трудные буквы — по доле попыток с ошибкой.
   const hard = Object.entries(progress.letters)
@@ -315,7 +323,7 @@ export async function showRecords() {
   // Общая таблица всех игроков — из облака (если аккаунты включены).
   const board = await loadLeaderboard();
   const player = getPlayer();
-  ui.renderLeaderboard(board, player ? player.username : null, formatTime);
+  ui.renderLeaderboard(board, player ? player.username : null, formatSeconds);
 }
 
 // ---------- Мелкие помощники ----------
@@ -325,6 +333,19 @@ function randomLetter(pool, previous) {
   return choices[Math.floor(Math.random() * choices.length)];
 }
 
+// Выбирает слова для экзамена так, чтобы на стыке слов не было одинаковых букв подряд
+// (ВАШ → ШАР: вторая «Ш» засчиталась бы сама, без нового жеста). Пробуем несколько раз.
+function pickExamWords(available) {
+  let words = [];
+  for (let attempt = 0; attempt < 30; attempt++) {
+    words = shuffle(available).slice(0, EXAM_WORDS_COUNT);
+    // Есть ли слово, которое начинается с той же буквы, которой кончается предыдущее?
+    const repeats = words.some((word, i) => i > 0 && word[0] === words[i - 1].slice(-1));
+    if (!repeats) return words;
+  }
+  return words;
+}
+
 function shuffle(list) {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -332,6 +353,11 @@ function shuffle(list) {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+// 1840 мс → «1,8 с на букву»
+function formatSeconds(ms) {
+  return `${(ms / 1000).toFixed(1).replace(".", ",")} с на букву`;
 }
 
 function formatTime(ms) {

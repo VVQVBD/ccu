@@ -11,7 +11,7 @@
 // Что храним:
 //   lessons      — звёзды за каждый пройденный урок: { 1: 3, 2: 2 }
 //   bestTraining — лучший счёт тренировки (сколько букв за минуту)
-//   bestExamMs   — лучшее время экзамена в миллисекундах
+//   bestExamMs   — лучший экзамен: среднее время на одну букву, мс (слова разной длины — так честно)
 //   letters      — по каждой букве: сколько раз показали и сколько раз с ошибкой
 //
 // Связь: game.js сохраняет результаты, main.js переключает владельца при входе/выходе.
@@ -89,11 +89,11 @@ export function saveTrainingResult(score) {
   return isRecord;
 }
 
-// Возвращает true, если это новый рекорд экзамена (меньше время — лучше).
-export function saveExamResult(timeMs) {
+// Возвращает true, если это новый рекорд экзамена (меньше время на букву — лучше).
+export function saveExamResult(msPerLetter) {
   const progress = loadProgress();
-  const isRecord = progress.bestExamMs === null || timeMs < progress.bestExamMs;
-  if (isRecord) progress.bestExamMs = timeMs;
+  const isRecord = progress.bestExamMs === null || msPerLetter < progress.bestExamMs;
+  if (isRecord) progress.bestExamMs = msPerLetter;
   saveProgress(progress);
   return isRecord;
 }
