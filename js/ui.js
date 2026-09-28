@@ -192,6 +192,57 @@ export function getTargetElement() {
   return $("target");
 }
 
+// ---------- Раздел «Слова» ----------
+
+// items — из game.js: { word, stars, locked }
+export function renderWords(items) {
+  const collected = items.filter((i) => i.stars > 0).length;
+  $("words-count").textContent = `${collected} / ${items.length}`;
+  $("words-grid").innerHTML = items.map((item) => `
+    <button class="btn word-card ${item.stars ? "collected" : ""}" data-action="word" data-word="${item.word}"
+            ${item.locked ? "disabled" : ""}>
+      <span class="word-text">${item.locked ? "🔒 " : ""}${item.word}</span>
+      <span class="sub">${item.stars ? "★".repeat(item.stars) + "☆".repeat(3 - item.stars) : item.locked ? "выучи буквы" : "не собрано"}</span>
+    </button>`).join("");
+}
+
+// Экран свободного письма. view — из writing.js.
+let shownWriteKey = "";
+export function renderWrite(view) {
+  // Обновляем экран, только если что-то изменилось (эта функция вызывается каждый кадр).
+  const key = [view.text, view.letter, view.status, view.found.length, Math.round(view.progress * 50)].join("|");
+  if (key === shownWriteKey) return;
+  shownWriteKey = key;
+
+  $("write-text").textContent = view.text;
+  $("write-found").textContent = `Слов: ${view.found.length}`;
+  $("write-status").textContent = view.status;
+  const letter = $("write-letter");
+  if (letter.textContent !== (view.letter || "?")) {
+    letter.textContent = view.letter || "?";
+    letter.classList.remove("swap");
+    void letter.offsetWidth;
+    letter.classList.add("swap");
+  }
+  letter.classList.toggle("unknown", !view.letter);
+  $("write-ring").style.strokeDashoffset = RING_LENGTH * (1 - Math.min(1, view.progress));
+  // Подсказки-слова: собранные — зелёные.
+  $("write-chips").innerHTML = ["СОВА", "НОС", "СЫР", "ШАР", "УСЫ", "ВЫ"]
+    .map((w) => `<span class="chip ${view.collected[w] ? "done" : ""}">${w}</span>`).join(" ");
+}
+
+let toastTimer = null;
+export function showWriteToast(text) {
+  const toast = $("write-toast");
+  toast.textContent = text;
+  toast.hidden = false;
+  toast.classList.remove("show");
+  void toast.offsetWidth;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 2500);
+}
+
 // ---------- Итоги и рекорды ----------
 
 function statsHtml(rows) {

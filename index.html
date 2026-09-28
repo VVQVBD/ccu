@@ -147,7 +147,7 @@
   <!-- ================= ПРИЛОЖЕНИЕ ================= -->
   <div id="app" hidden>
     <header class="topbar">
-      <button class="logo logo-button" data-action="home" title="На главную"><span class="logo-mark">✋</span> Азбука жестов</button>
+      <button class="logo logo-button" data-action="home" title="На главную"><span class="logo-mark">✋</span> <span class="logo-text">Азбука жестов</span></button>
       <div class="topbar-buttons">
         <span class="user-chip" id="user-chip" hidden></span>
         <button class="btn btn-small" data-action="sound" id="sound-button">🔊</button>
@@ -235,6 +235,45 @@
           <div class="play-buttons">
             <button class="btn" data-action="skip" id="skip-button" hidden>Пропустить ⏭</button>
           </div>
+        </div>
+
+        <!-- ЭКРАН: раздел «Слова» — свободное письмо и словарь -->
+        <div class="screen" id="screen-words">
+          <h1>Слова</h1>
+          <p class="lead">Складывай слова из выученных букв.</p>
+          <button class="btn btn-primary btn-wide-full write-cta" data-action="write">
+            <span>✍️ Свободное письмо</span>
+            <span class="sub">Показывай любые буквы — приложение само их узнает и напечатает</span>
+          </button>
+          <div class="words-head">
+            <h3>📖 Словарь</h3>
+            <span id="words-count">0 / 17</span>
+          </div>
+          <div class="words-grid" id="words-grid"><!-- карточки слов рисует ui.js (renderWords) --></div>
+        </div>
+
+        <!-- ЭКРАН: свободное письмо -->
+        <div class="screen" id="screen-write">
+          <div class="play-header">
+            <span class="play-mode">Свободное письмо</span>
+            <span class="play-info" id="write-found">Слов: 0</span>
+          </div>
+          <div class="write-line"><span id="write-text"></span><span class="caret"></span></div>
+          <div class="write-now" id="write-now">
+            <svg class="hold-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="hold-ring-bg" cx="60" cy="60" r="54"></circle>
+              <circle class="hold-ring-fill" id="write-ring" cx="60" cy="60" r="54"></circle>
+            </svg>
+            <div class="write-letter" id="write-letter">?</div>
+          </div>
+          <p class="write-status" id="write-status">Покажи букву и подержи</p>
+          <div class="write-toast" id="write-toast" hidden></div>
+          <div class="write-buttons">
+            <button class="btn" data-action="write-back">⌫ Стереть</button>
+            <button class="btn" data-action="write-clear">Очистить</button>
+            <button class="btn" data-action="words">📖 Словарь</button>
+          </div>
+          <p class="small-note">Попробуй сложить: <span id="write-chips"></span></p>
         </div>
 
         <!-- ЭКРАН: итоги -->

@@ -701,6 +701,54 @@ body.app-open .aurora span { animation-play-state: paused; }
 
 .play-buttons { display: flex; justify-content: center; margin-top: 14px; }
 
+/* Раздел «Слова» */
+.write-cta { flex-direction: column; margin-bottom: 20px; }
+.words-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; color: var(--muted); font-weight: 700; }
+.words-head h3 { color: var(--text); font-size: 1rem; }
+.words-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.word-card { flex-direction: column; padding: 10px 6px; animation: pop-in 0.4s var(--ease-spring) backwards; }
+.word-card .word-text { font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.04em; }
+.word-card .sub { color: var(--amber); font-size: 0.8rem; }
+.word-card.collected { border-color: rgba(52, 211, 153, 0.5); background: rgba(52, 211, 153, 0.12); }
+
+/* Свободное письмо */
+.write-line {
+  min-height: 64px;
+  margin: 14px 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+}
+.caret { display: inline-block; width: 3px; height: 1.1em; margin-left: 2px; vertical-align: -0.15em; background: var(--pink); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.write-now { position: relative; width: 130px; height: 130px; margin: 6px auto; }
+.write-letter { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 4rem; font-weight: 800; }
+.write-letter.unknown { color: var(--muted); opacity: 0.5; }
+.write-letter.swap { animation: letter-in 0.4s var(--ease-spring); }
+.write-status { text-align: center; color: var(--muted); font-weight: 700; min-height: 1.5em; margin: 4px 0 10px; }
+.write-toast {
+  text-align: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--gradient);
+  color: #1b0f2e;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+.write-toast.show { animation: praise-in 0.5s var(--ease-spring); }
+.write-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.write-buttons .btn { padding: 12px 6px; font-size: 0.9rem; }
+.chip { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 8px; background: var(--glass-strong); font-weight: 800; color: var(--text); }
+.chip.done { background: rgba(52, 211, 153, 0.25); color: var(--ok); }
+
 /* Итоги */
 .stars { display: flex; gap: 6px; font-size: 3rem; margin: 10px 0; }
 .stars span { color: rgba(255, 255, 255, 0.12); }
@@ -821,4 +869,10 @@ body.app-open .aurora span { animation-play-state: paused; }
   .hint-bubble:nth-child(even) { margin-left: 0; }
   .user-chip { display: none; }
   .logo { font-size: 0.95rem; }
+}
+
+/* Совсем узкий телефон: в шапке приложения оставляем только значок ✋ */
+@media (max-width: 400px) {
+  .topbar .logo-text { display: none; }
+  .words-grid { grid-template-columns: repeat(2, 1fr); }
 }
