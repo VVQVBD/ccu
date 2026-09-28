@@ -1,8 +1,12 @@
 // ============================================================
 // storage.js — прогресс и рекорды пользователя.
 //
-// Храним в localStorage — это память браузера на этом устройстве.
-// Сервер и регистрация не нужны: закрыл вкладку, открыл снова — прогресс на месте.
+// Прогресс всегда хранится в localStorage (память браузера) — это быстро и работает
+// даже без интернета. Если игрок вошёл в аккаунт, после каждого результата
+// копия уходит в облако (auth.js → Supabase), и на другом устройстве прогресс
+// подтянется при входе.
+//
+// У каждого аккаунта своя запись в браузере (ключ с id игрока), у гостя — своя.
 //
 // Что храним:
 //   lessons      — звёзды за каждый пройденный урок: { 1: 3, 2: 2 }
@@ -10,31 +14,63 @@
 //   bestExamMs   — лучшее время экзамена в миллисекундах
 //   letters      — по каждой букве: сколько раз показали и сколько раз с ошибкой
 //
-// Связь: game.js сохраняет результаты, ui.js показывает рекорды.
+// Связь: game.js сохраняет результаты, main.js переключает владельца при входе/выходе.
 // ============================================================
 
-const STORAGE_KEY = "azbuka-progress-v1";
+import { pushProgress } from "./auth.js";
+
+const STORAGE_PREFIX = "azbuka-progress-v1";
+let owner = "guest"; // id игрока или "guest"
+
+function storageKey() {
+  return `${STORAGE_PREFIX}:${owner}`;
+}
 
 function emptyProgress() {
   return { lessons: {}, bestTraining: 0, bestExamMs: null, letters: {} };
 }
 
+// Кто сейчас играет. cloudProgress — прогресс из облака (при входе), его объединяем с локальным.
+export function setOwner(playerId, cloudProgress = null) {
+  owner = playerId || "guest";
+  if (cloudProgress) saveProgress(mergeProgress(loadProgress(), cloudProgress), false);
+}
+
+// Объединяем два прогресса и берём лучшее из каждого — чтобы ничего не потерять.
+function mergeProgress(a, b) {
+  const lessons = { ...a.lessons };
+  for (const n in b.lessons) lessons[n] = Math.max(lessons[n] || 0, b.lessons[n]);
+  const exams = [a.bestExamMs, b.bestExamMs].filter((ms) => ms !== null && ms !== undefined);
+  // Статистику букв берём из того, где букву показывали чаще.
+  const letters = { ...a.letters };
+  for (const l in b.letters) {
+    if (!letters[l] || b.letters[l].shown > letters[l].shown) letters[l] = b.letters[l];
+  }
+  return {
+    lessons,
+    bestTraining: Math.max(a.bestTraining || 0, b.bestTraining || 0),
+    bestExamMs: exams.length ? Math.min(...exams) : null,
+    letters,
+  };
+}
+
 // Читает прогресс. Если данных нет или они испорчены — начинаем с нуля.
 export function loadProgress() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(storageKey()));
     return saved ? { ...emptyProgress(), ...saved } : emptyProgress();
   } catch {
     return emptyProgress(); // например, в режиме инкогнито localStorage может быть недоступен
   }
 }
 
-function saveProgress(progress) {
+function saveProgress(progress, sendToCloud = true) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(storageKey(), JSON.stringify(progress));
   } catch {
     // Не сохранилось — не страшно, приложение всё равно работает.
   }
+  if (sendToCloud) pushProgress(progress);
 }
 
 // Урок пройден: запоминаем лучший результат по звёздам.

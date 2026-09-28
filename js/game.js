@@ -20,6 +20,8 @@ import {
 import * as ui from "./ui.js";
 import * as storage from "./storage.js";
 import { playSuccess, playHint, playFinish } from "./sound.js";
+import { burstFromElement, burstConfetti, flashStage } from "./effects.js";
+import { getPlayer, loadLeaderboard } from "./auth.js";
 
 const PRAISES = ["Отлично!", "Точно!", "Супер!", "Молодец!", "Идеально!"];
 const PRAISE_PAUSE_MS = 700; // пауза после засчитанной буквы, чтобы порадоваться
@@ -60,7 +62,8 @@ export function showMenu() {
     locked: !progress.lessons[2],
   });
   items.push({ action: "records", title: "Рекорды", sub: "и прогресс", wide: true });
-  ui.renderMenu(items);
+  const player = getPlayer();
+  ui.renderMenu(items, player ? `Привет, ${player.username}!` : "Учим дактильную азбуку");
   ui.showScreen("menu");
 }
 
@@ -139,6 +142,8 @@ function finishLetter(now, skipped) {
   if (!skipped) {
     playSuccess();
     ui.showPraise(PRAISES[Math.floor(Math.random() * PRAISES.length)]);
+    burstFromElement(ui.getTargetElement(), 40); // конфетти из буквы
+    flashStage();                                // зелёная вспышка по краям камеры
     ui.setHint(null);
     session.pauseUntil = now + PRAISE_PAUSE_MS;
   } else {
@@ -275,6 +280,9 @@ function finishSession(now) {
   }
 
   ui.renderResults({ title, stars, isRecord, rows, hardText: hardLettersText(results) });
+  // Салют в итогах: за три звезды или новый рекорд — побольше.
+  const big = stars === 3 || isRecord;
+  setTimeout(() => burstConfetti(window.innerWidth / 2, window.innerHeight / 3, big ? 160 : 60), 300);
   ui.showScreen("results");
 }
 
@@ -288,7 +296,7 @@ function hardLettersText(results) {
   return unique.length ? `Потренируй ещё: ${unique.join(", ")}` : "Все буквы без ошибок — так держать!";
 }
 
-export function showRecords() {
+export async function showRecords() {
   const progress = storage.loadProgress();
   const lessonsDone = Object.keys(progress.lessons).length;
   const rows = [
@@ -304,6 +312,10 @@ export function showRecords() {
     .map(([letter, stat]) => `${letter} (${Math.round((stat.mistakes / stat.shown) * 100)}% с ошибкой)`);
   ui.renderRecords(rows, hard.length ? `Самые трудные буквы: ${hard.join(", ")}` : "");
   ui.showScreen("records");
+  // Общая таблица всех игроков — из облака (если аккаунты включены).
+  const board = await loadLeaderboard();
+  const player = getPlayer();
+  ui.renderLeaderboard(board, player ? player.username : null, formatTime);
 }
 
 // ---------- Мелкие помощники ----------
