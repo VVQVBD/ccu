@@ -16,9 +16,12 @@ import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 
 let supabase = null;
 let currentPlayer = null; // { id, username } или null, если не вошли
+let saving = Promise.resolve(); // очередь сохранений в облако (см. pushProgress)
 
+// Аккаунты включены, только если библиотека Supabase реально загрузилась.
+// Если адрес не задан или CDN недоступен — работаем без аккаунтов.
 export function accountsEnabled() {
-  return Boolean(SUPABASE_URL && SUPABASE_KEY);
+  return supabase !== null;
 }
 
 export function getPlayer() {
@@ -28,19 +31,32 @@ export function getPlayer() {
 // Подключаемся к Supabase и проверяем, не вошёл ли игрок раньше (сессия хранится в браузере).
 // Возвращает прогресс из облака или null.
 export async function initAuth() {
-  if (!accountsEnabled()) return null;
-  // Библиотеку Supabase грузим с CDN — как и MediaPipe, ничего устанавливать не нужно.
-  const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm");
-  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+  try {
+    // Библиотеку Supabase грузим с CDN — как и MediaPipe, ничего устанавливать не нужно.
+    const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm");
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (error) {
+    console.warn("Supabase не загрузился — играем без аккаунтов:", error);
+    return null;
+  }
   const { data } = await supabase.auth.getSession();
   if (!data.session) return null;
-  return loadPlayer(data.session.user.id);
+  try {
+    return await loadPlayer(data.session.user.id);
+  } catch {
+    return null; // сессия есть, а профиля нет — просто покажем экран входа
+  }
 }
 
 // Читает строку игрока из таблицы players. Возвращает прогресс в формате storage.js.
+// Если строки нет — это ошибка: иначе человек думал бы, что вошёл, а играл как гость.
 async function loadPlayer(userId) {
   const { data, error } = await supabase.from("players").select("*").eq("id", userId).single();
-  if (error || !data) return null;
+  if (error || !data) {
+    await supabase.auth.signOut();
+    throw new Error("Профиль игрока не найден — зарегистрируйся заново или напиши команде");
+  }
   currentPlayer = { id: data.id, username: data.username };
   return {
     lessons: data.lessons || {},
@@ -83,21 +99,34 @@ export async function signOut() {
 
 // Сохраняет прогресс в облако. Вызывается после каждого результата.
 // Ошибку сети не показываем: прогресс всё равно сохранён в браузере и уйдёт в следующий раз.
-export async function pushProgress(progress) {
+// Запросы ставим в очередь: следующий уходит только после предыдущего.
+// Иначе два быстрых сохранения могли бы прийти в обратном порядке, и старые данные затёрли бы новые.
+export function pushProgress(progress) {
   if (!supabase || !currentPlayer) return;
+  const playerId = currentPlayer.id;
+  saving = saving.then(() => sendProgress(playerId, progress));
+}
+
+// Дождаться, пока все сохранения дошли (например, перед показом общей таблицы).
+export function waitForSaves() {
+  return saving;
+}
+
+async function sendProgress(playerId, progress) {
   const { error } = await supabase.from("players").update({
     lessons: progress.lessons,
     best_training: progress.bestTraining,
     best_exam_ms: progress.bestExamMs,
     letters: progress.letters,
     updated_at: new Date().toISOString(),
-  }).eq("id", currentPlayer.id);
+  }).eq("id", playerId);
   if (error) console.warn("Не удалось сохранить прогресс в облако:", error.message);
 }
 
 // Общая таблица рекордов: лучшие по тренировке и по экзамену.
 export async function loadLeaderboard(limit = 10) {
   if (!supabase) return null;
+  await waitForSaves(); // сначала пусть дойдёт свежий результат
   const training = await supabase.from("players")
     .select("username, best_training").gt("best_training", 0)
     .order("best_training", { ascending: false }).limit(limit);
@@ -110,6 +139,7 @@ export async function loadLeaderboard(limit = 10) {
 // Ошибки Supabase приходят по-английски — переводим самые частые.
 function translateError(message) {
   if (/invalid login credentials/i.test(message)) return "Неверная почта или пароль";
+  if (/email not confirmed/i.test(message)) return "Почта не подтверждена — открой письмо от Supabase";
   if (/already registered|already been registered/i.test(message)) return "Эта почта уже зарегистрирована — войди";
   if (/valid email|invalid.*email/i.test(message)) return "Проверь адрес почты";
   if (/rate limit|too many/i.test(message)) return "Слишком много попыток — подожди минуту";
